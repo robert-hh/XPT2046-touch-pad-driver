@@ -54,7 +54,7 @@ get_touch(initial = True, wait = True, raw = False, timeout = None)
         told to wait, e.g. initial = True or wait = True. 
         A value of None is considered as a timeout of an hour.
     
-    The function returns a two value tuple ``(x,y)`` of the touch coordinates, or ``None``, if either no touch is 
+    The function returns a two value tuple (x,y) of the touch coordinates, or 'None', if either no touch is 
     pressed or the timeout triggers.
 
 do_normalize(touch)
@@ -65,10 +65,10 @@ do_normalize(touch)
 
 raw_touch()
     # determine the raw touch value and return immediately. The return value is a pair of 
-      touch pad coordinates, is a touch is present, or ``None``
+      touch pad coordinates, is a touch is present, or 'None'
       
 touch_talk(command, bits)
-    # send commands to the touch pad controller and retrieves  ``bits`` data from it.
+    # send commands to the touch pad controller and retrieves 'bits' data from it.
       It will always perform and return. No checking is done for the command value
       and the returned information.
 ```
@@ -78,7 +78,7 @@ touch_talk(command, bits)
 - calibration.py: Code to determine the calibration of the touch pad, which allows to map between touch pad
 and screen coordinates. You will be asked to touch four points at the screen indicated by a cross-hair. 
 The confidence level is set high, so keep your hand steady. If it fails at a certain point, release and touch again.
-The determined values are printed on the screen and at the USB interface. So can copy the from there.
+The determined values are printed on the screen and at the USB interface. So you can copy them from there.
 Once the values are know, they are set temporarily, and you may try them. Just touch the screen. At the point of 
 touching, a small green circle should light up. If the match is bad, repeat the calibration. 
 - touchtest.py: Another sample test program, which creates a small four button keypad, which is defined by
