@@ -29,11 +29,23 @@ import pyb, stm
 
 # define constants
 #
-T_CLOCK = const(1 << 15)  ## Y8 = B15
-T_DOUT  = const(1 << 14)  ## Y7 = B14
-T_DIN   = const(1 << 13)  ## Y6 = B13
-T_IRQ   = const(1 << 12)  ## Y5 = B12
-## T_CS is not used and must be hard tied to GND
+PCB_VERSION = 2
+
+#if PCB_VERSION == 1:
+#    CONTROL_PORT = stm.GPIOB
+#    T_CLOCK = const(1 << 15)  ## Y8 = B15
+#    T_DOUT  = const(1 << 14)  ## Y7 = B14
+#    T_DIN   = const(1 << 13)  ## Y6 = B13
+#    T_IRQ   = const(1 << 12)  ## Y5 = B12
+    
+if PCB_VERSION == 2:
+    CONTROL_PORT = stm.GPIOC
+    T_CLOCK = const(1 << 5)  ## X12 = C5
+    T_DOUT  = const(1 << 4)  ## X11 = C4
+    T_DIN   = const(1 << 7)  ## Y2  = C7
+    T_IRQ   = const(1 << 6)  ## Y1  = C6
+
+# T_CS is not used and must be hard tied to GND
 
 T_GETX  = const(0xd0)  ## 12 bit resolution
 T_GETY  = const(0x90)  ## 12 bit resolution
@@ -48,11 +60,18 @@ class TOUCH:
 # Init just sets the PIN's to In / out as required
 #    
     def __init__(self, controller = "XPT2046", calibration = None):
-        self.pin_clock = pyb.Pin("Y8", pyb.Pin.OUT_PP)
-        self.pin_clock.value(0)
-        self.pin_d_out = pyb.Pin("Y7", pyb.Pin.OUT_PP)
-        self.pin_d_in  = pyb.Pin("Y6", pyb.Pin.IN)
-        self.pin_irq   = pyb.Pin("Y5", pyb.Pin.IN)
+        if PCB_VERSION == 1:
+            self.pin_clock = pyb.Pin("Y8", pyb.Pin.OUT_PP)
+            self.pin_clock.value(0)
+            self.pin_d_out = pyb.Pin("Y7", pyb.Pin.OUT_PP)
+            self.pin_d_in  = pyb.Pin("Y6", pyb.Pin.IN)
+            self.pin_irq   = pyb.Pin("Y5", pyb.Pin.IN)
+        else:
+            self.pin_clock = pyb.Pin("X11", pyb.Pin.OUT_PP)
+            self.pin_clock.value(0)
+            self.pin_d_out = pyb.Pin("X12", pyb.Pin.OUT_PP)
+            self.pin_d_in  = pyb.Pin("Y1", pyb.Pin.IN)
+            self.pin_irq   = pyb.Pin("Y2", pyb.Pin.IN)
 # set default values
         self.confidence = 5 
         self.delay = 10 # 10 ms between touch samples
@@ -175,8 +194,9 @@ class TOUCH:
 # raw read touch. Returns (x,y) or None
 #
     def raw_touch(self):
-        x  = self.touch_talk(T_GETX, 12)
-        y  = self.touch_talk(T_GETY, 12)
+        global CONTROL_PORT
+        x  = self.touch_talk(T_GETX, 12, CONTROL_PORT)
+        y  = self.touch_talk(T_GETY, 12, CONTROL_PORT)
         if x > X_LOW and y < Y_HIGH:  # touch pressed?
             return (x, y)
         else:
@@ -185,6 +205,7 @@ class TOUCH:
 # Send a command to the touch controller and wait for the response
 # cmd is the command byte
 # int is the expected size of return data bits
+# port is the gpio base port
 #
 # Straight down coding of the data sheet's timing diagram
 # Clock low & high cycles must last at least 200ns, therefore
@@ -194,32 +215,32 @@ class TOUCH:
 #
     @staticmethod
     @micropython.viper        
-    def touch_talk(cmd: int, bits: int)  -> int:
-        gpiob_bsr = ptr16(stm.GPIOB + stm.GPIO_BSRRL)
-        gpiob_idr = ptr16(stm.GPIOB + stm.GPIO_IDR)
+    def touch_talk(cmd: int, bits: int, port: int)  -> int:
+        gpio_bsr = ptr16(port + stm.GPIO_BSRRL)
+        gpio_idr = ptr16(port + stm.GPIO_IDR)
 #
 # now shift the command out, which is 8 bits 
 # data is sampled at the low-> high transient
 #
-        gpiob_bsr[1] = T_CLOCK # Empty clock cycle before start, maybe obsolete
+        gpio_bsr[1] = T_CLOCK # Empty clock cycle before start, maybe obsolete
         for i in range(2): pass #delay
-#        gpiob_bsr[0] = T_CLOCK # clock High
+#        gpio_bsr[0] = T_CLOCK # clock High
 #        for i in range(2): pass #delay
-#        gpiob_bsr[1] = T_CLOCK # set clock low in the beginning
+#        gpio_bsr[1] = T_CLOCK # set clock low in the beginning
         mask = 0x80  # high bit first
         for i in range(8):
-            gpiob_bsr[1] = T_CLOCK # set clock low in the beginning
+            gpio_bsr[1] = T_CLOCK # set clock low in the beginning
             if cmd & mask:
-                gpiob_bsr[0] = T_DOUT # set data bit high
+                gpio_bsr[0] = T_DOUT # set data bit high
             else:
-                gpiob_bsr[1] = T_DOUT # set data bit low
+                gpio_bsr[1] = T_DOUT # set data bit low
             for i in range(1): pass #delay
-            gpiob_bsr[0] = T_CLOCK # set clock high
+            gpio_bsr[0] = T_CLOCK # set clock high
             mask >>= 1
             for i in range(0): pass #delay
-        gpiob_bsr[1] = T_CLOCK | T_DOUT# Another clock & data, low
+        gpio_bsr[1] = T_CLOCK | T_DOUT# Another clock & data, low
         for i in range(2): pass #delay
-        gpiob_bsr[0] = T_CLOCK # clock High
+        gpio_bsr[0] = T_CLOCK # clock High
         for i in range(0): pass #delay
 #
 # now shift the data in, which is 8 or 12 bits 
@@ -227,23 +248,23 @@ class TOUCH:
 #
         result = 0
         for i in range(bits):
-            gpiob_bsr[1] = T_CLOCK # Clock low
+            gpio_bsr[1] = T_CLOCK # Clock low
             for i in range(1): pass # short delay
-            if gpiob_idr[0] & T_DIN: # get data
+            if gpio_idr[0] & T_DIN: # get data
                 bit = 1
             else:
                 bit = 0
             result = (result << 1) | bit # shift data in
-            gpiob_bsr[0] = T_CLOCK # Clock high
+            gpio_bsr[0] = T_CLOCK # Clock high
             for i in range(1): pass # delay
 #
 # another clock cycle, maybe obsolete
 #
-        gpiob_bsr[1] = T_CLOCK # Another clock toggle, low
+        gpio_bsr[1] = T_CLOCK # Another clock toggle, low
         for i in range(2): pass # delay
-        gpiob_bsr[0] = T_CLOCK # clock High
+        gpio_bsr[0] = T_CLOCK # clock High
         for i in range(2): pass #delay
-        gpiob_bsr[1] = T_CLOCK # Clock low
+        gpio_bsr[1] = T_CLOCK # Clock low
 # now we're ready to leave
         return result
 

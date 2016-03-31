@@ -99,6 +99,7 @@ def main():
 
     mytft = TFT("SSD1963", "LB04301", LANDSCAPE)
     mytouch = TOUCH("XPT2046")
+    mytft.backlight(100) # light on
     
     rtn = ""
     while rtn != "Q":
