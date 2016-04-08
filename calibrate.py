@@ -5,13 +5,12 @@ import os, gc
 from uctypes import addressof
 from tft import *
 from touch import *
-from smallfont import *
+from font8mono import font8mono
 
 def print_centered(tft, x, y, s, font):
-    cols = font[0]
-    rows = font[1]
-    size = len(s)
-    tft.printString(x - size * cols // 2, y - rows // 2, s, font)
+    length, height = font.get_stringsize(s)
+    tft.setTextPos(x - length // 2, y - height // 2)
+    tft.printString(s)
 
 def draw_crosshair(tft, x, y):
     color = tft.getColor() # get previous color
@@ -26,24 +25,27 @@ def main(get_cal = False):
     mytft = TFT("SSD1963", "LB04301", LANDSCAPE)
     width, height = mytft.getScreensize()
     mytouch = TOUCH("XPT2046")
+    mytft.backlight(100) # light on
+
     if get_cal:
+        mytft.setTextStyle(None, None, 0, font8mono)
         mytouch.touch_parameter(confidence=20, margin = 15) # make it slow & precise
-        print_centered(mytft, 240, 136, "Touch the crosshair in the upper left corner", SmallFont)
+        print_centered(mytft, 240, 136, "Touch the crosshair in the upper left corner", font8mono)
         draw_crosshair(mytft, 10, 10)
         x1, y1 = mytouch.get_touch(raw = True) # need the raw values here
 
         mytft.clrSCR()
-        print_centered(mytft, 240, 136, "Touch the crosshair in the upper right corner", SmallFont)
+        print_centered(mytft, 240, 136, "Touch the crosshair in the upper right corner", font8mono)
         draw_crosshair(mytft, width - 11, 10)
         x2, y2 = mytouch.get_touch(raw = True) # need the raw values here
 
         mytft.clrSCR()
-        print_centered(mytft, 240, 136, "Touch the crosshair in the lower left corner", SmallFont)
+        print_centered(mytft, 240, 136, "Touch the crosshair in the lower left corner", font8mono)
         draw_crosshair(mytft, 10, height - 11)
         x3, y3 = mytouch.get_touch(raw = True) # need the raw values here
 
         mytft.clrSCR()
-        print_centered(mytft, 240, 136, "Touch the crosshair in the lower right corner", SmallFont)
+        print_centered(mytft, 240, 136, "Touch the crosshair in the lower right corner", font8mono)
         draw_crosshair(mytft, width - 11, height - 11)
         x4, y4 = mytouch.get_touch(raw = True) # need the raw values here
 
@@ -59,14 +61,14 @@ def main(get_cal = False):
         res = "({},{:6.4},{},{:6.4},{},{:6.4},{},{:6.4})".format(
                 xadd_top, xmul_top, xadd_bot, xmul_bot, yadd_left, ymul_left, yadd_right, ymul_right)
         mytft.setColor((255,255,255))
-        print_centered(mytft, 240, 120, "Calibration =", SmallFont)
-        print_centered(mytft, 240, 136, res, SmallFont)
+        print_centered(mytft, 240, 120, "Calibration =", font8mono)
+        print_centered(mytft, 240, 136, res, font8mono)
         print ("Calibration =", res)
         mytouch.touch_parameter(confidence = 5, margin = 20, 
             calibration = (xadd_top, xmul_top, xadd_bot, xmul_bot, yadd_left, ymul_left, yadd_right, ymul_right))
-        print_centered(mytft, 240, 152, "Now you may touch for testing", SmallFont)
+        print_centered(mytft, 240, 152, "Now you may touch for testing", font8mono)
     else:
-        print_centered(mytft, 240, 136, "Please touch me!", SmallFont)
+        print_centered(mytft, 240, 136, "Please touch me!", font8mono)
     mytft.setColor((0, 255, 0))  # green as can be
     while True:
         res = mytouch.get_touch()

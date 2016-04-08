@@ -5,16 +5,13 @@ import os, gc
 from uctypes import addressof
 from tft import *
 from touch import *
-from bigfont import *
+from font14 import font14
 
 def print_centered(tft, x, y, s, color, font):
-    fgcolor = tft.getColor() # save old color
-    tft.setColor(color)
-    cols = font[0]
-    rows = font[1]
-    size = len(s)
-    tft.printString(x - size * cols // 2, y - rows // 2, s, font, 2)
-    tft.setColor(fgcolor) # restore it
+    length, height = font.get_stringsize(s)
+    tft.setTextStyle(color, None, 2, font)
+    tft.setTextPos(x - length // 2, y - height // 2)
+    tft.printString(s)
 
 #
 # buttonarray for touchpad:
@@ -103,9 +100,11 @@ def main():
     
     rtn = ""
     while rtn != "Q":
-        rtn = get_from_keybd(mytft, mytouch, keytable, BigFont)
+        rtn = get_from_keybd(mytft, mytouch, keytable, font14)
         print("Returned: ", rtn)
-        mytft.printString(0, 150, "Button Value: " + repr(rtn) + " ", BigFont)
+        mytft.setTextPos(0, 150)
+        mytft.setTextStyle(None, None, 0, font14)
+        mytft.printString("Button Value: " + repr(rtn) + " ")
         
     
 main()
