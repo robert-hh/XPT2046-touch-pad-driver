@@ -7,8 +7,18 @@ from tft import *
 from touch import *
 from font8mono import font8mono
 
+#
+# Get string dimensions in pixels
+# 
+def get_stringsize(s, font):
+    hor = 0
+    for c in s:
+        fontptr, vert, cols = font.get_ch(ord(c))
+        hor += cols
+    return hor, vert
+
 def print_centered(tft, x, y, s, font):
-    length, height = font.get_stringsize(s)
+    length, height = get_stringsize(s, font)
     tft.setTextPos(x - length // 2, y - height // 2)
     tft.printString(s)
 
@@ -17,9 +27,8 @@ def draw_crosshair(tft, x, y):
     tft.setColor((255,0,0))  # red
     tft.drawHLine(x - 10, y, 20)
     tft.drawVLine(x, y - 10, 20)
-    tft.setColor(color) # reset color
+    tft.setColor(color) # restore color
 
-    
 def main(get_cal = False):
 
     mytft = TFT("SSD1963", "LB04301", LANDSCAPE)

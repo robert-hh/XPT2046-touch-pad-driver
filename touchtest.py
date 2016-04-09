@@ -7,8 +7,18 @@ from tft import *
 from touch import *
 from font14 import font14
 
+#
+# Get string dimensions in pixels
+# 
+def get_stringsize(s, font):
+    hor = 0
+    for c in s:
+        fontptr, vert, cols = font.get_ch(ord(c))
+        hor += cols
+    return hor, vert
+
 def print_centered(tft, x, y, s, color, font):
-    length, height = font.get_stringsize(s)
+    length, height = get_stringsize(s, font)
     tft.setTextStyle(color, None, 2, font)
     tft.setTextPos(x - length // 2, y - height // 2)
     tft.printString(s)

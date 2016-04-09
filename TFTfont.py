@@ -19,12 +19,4 @@ class TFTFont(object):
         delta = (relch + 1) * 2            # index is 2 bytes/char
         delta =  (self._index[delta] + (self._index[delta + 1] << 8)) - offset
         return addressof(self._font) + offset, self.bits_vert, (delta * 8) // self.bits_vert
-#
-# Get string length in pixels
-# 
-    def get_stringsize(self, s):
-        len = 0
-        for c in s:
-            fontptr, rows, cols = self.get_ch(ord(c))
-            len += cols
-        return len, self.bits_vert
+
