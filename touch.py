@@ -26,7 +26,6 @@
 # It uses Y5..Y8 of PyBoard
 #
 import pyb, stm
-from math import sqrt
 # define constants
 #
 PCB_VERSION = 2
@@ -74,8 +73,8 @@ class TOUCH:
             self.pin_irq   = pyb.Pin("Y2", pyb.Pin.IN)
 # set default values
         self.buff = [[0,0] for x in range(5)] # confidence == 5
-        self.delay = 10     # 10 ms between touch samples
-        self.margin = 50    # tolerance margin: standard deviation of distance of touch from mean
+        self.delay = 10       # 10 ms between touch samples
+        self.margin = 50 * 50 # tolerance margin: standard deviation of distance of touch from mean; store square
         if calibration:
             self.calibration = calibration
         else: # default values for my tft
@@ -96,7 +95,8 @@ class TOUCH:
         if confidence != len(self.buff):
             self.buff = [[0,0] for x in range(confidence)]
         self.delay = max(min(delay, 100), 5)
-        self.margin = max(min(margin, 100), 1)
+        margin = max(min(margin, 100), 1)
+        self.margin = margin * margin # store the square value
         if calibration:
             self.calibration = calibration
 #
@@ -135,8 +135,8 @@ class TOUCH:
             if nsamples == buf_length:
                 meanx = sum([c[0] for c in buff]) // buf_length
                 meany = sum([c[1] for c in buff]) // buf_length
-                dev = sqrt(sum([(c[0] - meanx)**2 + (c[1] - meany)**2 for c in buff]) / buf_length)
-                if dev <= self.margin: # got one
+                dev = sum([(c[0] - meanx)**2 + (c[1] - meany)**2 for c in buff]) / buf_length
+                if dev <= self.margin: # got one; compare against the square value
                     if raw:
                         return (meanx, meany)
                     else: 

@@ -77,7 +77,8 @@ touch_talk(command, bits)
 - touch.py: Source file with comments.
 - calibration.py: Code to determine the calibration of the touch pad, which allows to map between touch pad
 and screen coordinates. You will be asked to touch four points at the screen indicated by a cross-hair. 
-The confidence level is set high, so keep your hand steady. If it fails at a certain point, release and touch again.
+The confidence level is set high, so keep your hand steady and use a stylus. 
+If it fails at a certain point, release and touch again.
 The determined values are printed on the screen and at the USB interface. So you can copy them from there.
 Once the values are know, they are set temporarily, and you may try them. Just touch the screen. At the point of 
 touching, a small green circle should light up. If the match is bad, repeat the calibration. 
