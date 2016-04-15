@@ -26,7 +26,7 @@
 # It uses Y5..Y8 of PyBoard
 #
 import pyb, stm
-
+from math import sqrt
 # define constants
 #
 PCB_VERSION = 2
@@ -73,9 +73,9 @@ class TOUCH:
             self.pin_d_in  = pyb.Pin("Y1", pyb.Pin.IN)
             self.pin_irq   = pyb.Pin("Y2", pyb.Pin.IN)
 # set default values
-        self.confidence = 5 
-        self.delay = 10 # 10 ms between touch samples
-        self.margin = 10 # tolerance margin
+        self.buff = [[0,0] for x in range(5)] # confidence == 5
+        self.delay = 10     # 10 ms between touch samples
+        self.margin = 50    # tolerance margin: standard deviation of distance of touch from mean
         if calibration:
             self.calibration = calibration
         else: # default values for my tft
@@ -88,21 +88,15 @@ class TOUCH:
 # res: Resolution in bits of the returned values, default = 10
 # confidence: confidence level - number of consecutive touches with a margin smaller than the given level
 #       which the function will sample until it accepts it as a valid touch
-# margin: Difference at which touches are considered at the same position 
+# margin: Difference from mean centre at which touches are considered at the same position 
 # delay: Delay between samples in ms.
 #
-    def touch_parameter(self, confidence = 5, margin = 10, delay = 10, calibration = None):
-        if confidence > 25: 
-            confidence = 25
-        self.confidence = confidence
-        if delay > 100:
-            delay = 100
-        self.delay = delay
-        if margin > 100:
-            margin = 100
-        if margin < 1:
-            margin = 1
-        self.margin = margin
+    def touch_parameter(self, confidence = 5, margin = 50, delay = 10, calibration = None):
+        confidence = max(min(confidence, 25), 5)
+        if confidence != len(self.buff):
+            self.buff = [[0,0] for x in range(confidence)]
+        self.delay = max(min(delay, 100), 5)
+        self.margin = max(min(margin, 100), 1)
         if calibration:
             self.calibration = calibration
 #
@@ -133,46 +127,30 @@ class TOUCH:
             if timeout <= 0: # after timeout, return None
                 return None
 #
-        stack = []  # build up value stack, exit early if not touch
-        while len(stack) < self.confidence: # need at least confidence values in stack.
-            sample = self.raw_touch()
-            if sample : 
-                stack.append(sample)
-            else: 
-                if wait:
-                    stack.append((-1, -1)) # replace None by (-1, -1) here
-                else:
-                    return None ## leave early if no touch/dont't wait
-            pyb.delay(self.delay)
-            timeout -= self.delay
-#
-        stackptr = 0
-        while timeout > 0: 
-            dx = dy = True # check the stack for consistent values
-            sx = sy = 0
-            for i in range(self.confidence): # calculate average
-                sx += stack[i][0]
-                sy += stack[i][1]
-            sx //= self.confidence
-            sy //= self.confidence
-            for i in range(self.confidence):
-                dx &= abs(stack[i][0] - sx) <= self.margin
-                dy &= abs(stack[i][1] - sy) <= self.margin 
-            if dx and dy: # got one
-                if (sx < 0 or sy < 0): # no touch is also consistent
-                    if not wait: # 
-                        return None
-                else: 
+        buff = self.buff
+        buf_length = len(buff)
+        buffptr = 0
+        nsamples = 0
+        while timeout > 0:
+            if nsamples == buf_length:
+                meanx = sum([c[0] for c in buff]) // buf_length
+                meany = sum([c[1] for c in buff]) // buf_length
+                dev = sqrt(sum([(c[0] - meanx)**2 + (c[1] - meany)**2 for c in buff]) / buf_length)
+                if dev <= self.margin: # got one
                     if raw:
-                        return (sx, sy)
+                        return (meanx, meany)
                     else: 
-                        return self.do_normalize((sx, sy))
+                        return self.do_normalize((meanx, meany))
 # get a new value 
             sample = self.raw_touch()  # get a touch
-            if sample == None: 
-                sample = (-1, -1)
-            stack[stackptr] = sample # add to stack
-            stackptr = (stackptr + 1) % self.confidence
+            if sample == None:
+                if not wait:
+                    return None
+                nsamples = 0    # Invalidate buff
+            else:
+                buff[buffptr] = sample # put in buff
+                buffptr = (buffptr + 1) % buf_length
+                nsamples = min(nsamples +1, buf_length)
             pyb.delay(self.delay)
             timeout -= self.delay
         return None

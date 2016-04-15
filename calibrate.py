@@ -38,7 +38,7 @@ def main(get_cal = False):
 
     if get_cal:
         mytft.setTextStyle(None, None, 0, font8mono)
-        mytouch.touch_parameter(confidence=20, margin = 15) # make it slow & precise
+        mytouch.touch_parameter(confidence=20, margin = 40) # make it slow & precise
         print_centered(mytft, 240, 136, "Touch the crosshair in the upper left corner", font8mono)
         draw_crosshair(mytft, 10, 10)
         x1, y1 = mytouch.get_touch(raw = True) # need the raw values here
