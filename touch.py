@@ -30,19 +30,19 @@ import pyb, stm
 #
 PCB_VERSION = 2
 
-#if PCB_VERSION == 1:
+# PCB_VERSION 1
 #    CONTROL_PORT = stm.GPIOB
 #    T_CLOCK = const(1 << 15)  ## Y8 = B15
 #    T_DOUT  = const(1 << 14)  ## Y7 = B14
 #    T_DIN   = const(1 << 13)  ## Y6 = B13
 #    T_IRQ   = const(1 << 12)  ## Y5 = B12
     
-if PCB_VERSION == 2:
-    CONTROL_PORT = stm.GPIOC
-    T_CLOCK = const(1 << 5)  ## X12 = C5
-    T_DOUT  = const(1 << 4)  ## X11 = C4
-    T_DIN   = const(1 << 7)  ## Y2  = C7
-    T_IRQ   = const(1 << 6)  ## Y1  = C6
+# PCB_VERSION 2:
+CONTROL_PORT = stm.GPIOC
+T_CLOCK = const(1 << 5)  ## X12 = C5
+T_DOUT  = const(1 << 4)  ## X11 = C4
+T_DIN   = const(1 << 7)  ## Y2  = C7
+T_IRQ   = const(1 << 6)  ## Y1  = C6
 
 # T_CS is not used and must be hard tied to GND
 
@@ -217,9 +217,8 @@ class TOUCH:
 # raw read touch. Returns (x,y) or None
 #
     def raw_touch(self):
-        global CONTROL_PORT
-        x  = self.touch_talk(T_GETX, 12, CONTROL_PORT)
-        y  = self.touch_talk(T_GETY, 12, CONTROL_PORT)
+        x  = self.touch_talk(T_GETX, 12)
+        y  = self.touch_talk(T_GETY, 12)
         if x > X_LOW and y < Y_HIGH:  # touch pressed?
             return (x, y)
         else:
@@ -238,9 +237,10 @@ class TOUCH:
 #
     @staticmethod
     @micropython.viper        
-    def touch_talk(cmd: int, bits: int, port: int)  -> int:
-        gpio_bsr = ptr16(port + stm.GPIO_BSRRL)
-        gpio_idr = ptr16(port + stm.GPIO_IDR)
+    def touch_talk(cmd: int, bits: int)  -> int:
+        baseport = int(CONTROL_PORT)
+        gpio_bsr = ptr16(baseport + stm.GPIO_BSRRL)
+        gpio_idr = ptr16(baseport + stm.GPIO_IDR)
 #
 # now shift the command out, which is 8 bits 
 # data is sampled at the low-> high transient
