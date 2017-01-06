@@ -170,6 +170,7 @@ class TOUCH:
 
 # Asynchronous use: this thread maintains self.x and self.y
     async def _main_thread(self):
+        import uasyncio as asyncio
         buff = self.buff
         buf_length = self.buf_length
         buffptr = 0

@@ -170,7 +170,6 @@ class TOUCH:
 
 # Asynchronous use: this thread maintains self.x and self.y
     async def _main_thread(self):
-        # necessary in frozen touch_bytecode.py but not in normally imported touch.py??
         import uasyncio as asyncio
         buff = self.buff
         buf_length = self.buf_length
