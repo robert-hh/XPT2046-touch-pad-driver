@@ -23,9 +23,10 @@ The touch pad is used in 12 bit mode, returning values in the range of 0..4095 f
 ```
 Create instance:
 
-mytouch = TOUCH(controller, objsched = None, *, confidence = 5, margin = 50, delay = 10, calibration = None)
+mytouch = TOUCH(controller, asyn = False, *, confidence = 5, margin = 50, delay = 10, calibration = None)
     controller: String with the controller model. At the moment, it is ignored
-    objshed: scheduler if asynchronous operation intended
+    asyn: Set True if asynchronous operation intended. In this instance the
+        uasyncio library must be available.
     confidence: confidence level - number of consecutive touches with a
         margin smaller than the given level which the function will sample
         until it accepts it as a valid touch
@@ -101,8 +102,8 @@ touching, a small green circle should light up. If the match is bad,
 repeat the calibration.
 - touchtest.py: Another sample test program, which creates a small four button
 keypad, which is defined by a table.
-- touch_bytecode.py: An implementation of the libary whitout viper code. This
-nay be paced in frozen bytecode at the cost of execution speed.
+- touch_bytecode.py: An implementation of the libary whithout viper code. This
+may be placed in frozen bytecode at the cost of execution speed.
 - README.md: this one
 - LICENSE: The MIT license file
 
