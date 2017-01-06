@@ -5,7 +5,7 @@ import os, gc
 from uctypes import addressof
 from tft import *
 from touch import *
-from font14 import font14
+import font14
 
 #
 # Get string dimensions in pixels
@@ -13,7 +13,7 @@ from font14 import font14
 def get_stringsize(s, font):
     hor = 0
     for c in s:
-        fontptr, vert, cols = font.get_ch(ord(c))
+        _, vert, cols = font.get_ch(c)
         hor += cols
     return hor, vert
 
@@ -39,8 +39,8 @@ keytable = [
     [ "B", "c", (120, 50, 25),      "f", (255, 0, 0),     False, "No",   False],
     [ "C", "c", (190, 50, 25),      "b", (0, 0, 255),     False, "???",  False],
     [ "Q", "s", (260, 30, 320, 70), "f", (128, 128, 128), False, "Quit", False],
-]        
-            
+]
+
 def get_from_keybd(tft, touchpad, keytable, font):
 #
 # first, check, if buttons are to be displayed
@@ -115,6 +115,6 @@ def main():
         mytft.setTextPos(0, 150)
         mytft.setTextStyle(None, None, 0, font14)
         mytft.printString("Button Value: " + repr(rtn) + " ")
-        
-    
+
+
 main()
