@@ -118,3 +118,6 @@ Initial release with the basic functions
 
 **1.0**
 Added an asynchronous mode implemented by Peter Hinch
+
+**1.1**
+Asynchronous mode adapted to use uasyncio
