@@ -28,7 +28,7 @@ def print_centered(tft, x, y, s, color, font):
 #
 # Example
 # Define touch area                   | Define display of button        | Text in Button
-# Value     Type        Area            Display        fccolor   gcbolor   text    color
+# Value     Type        Area            Display        fgcolor   bgcolor  text    color
 # str       "c"/"r"/"s" Tuple           False/"f"/"b"  opt.      opt.      value   opt.
 # "A"       "c"         (x,y,r)         "f"            (0,255,0) False    "Yes"    None
 # "B"       "c"         (x1,y1,x2,y2)   "f"            (255,0,0) False    "No"     None
