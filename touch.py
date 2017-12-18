@@ -50,6 +50,8 @@ class TOUCH:
     def __init__(self, controller="XPT2046", asyn=False, *, confidence=5, margin=50, delay=10, calibration=None, spi = None):
         if spi is None:
             self.spi = SPI(-1, baudrate=1000000, sck=Pin("X12"), mosi=Pin("X11"), miso=Pin("Y2"))
+        else:
+            self.spi = spi
         self.recv = bytearray(2)
 # set default values
         self.ready = False
@@ -204,6 +206,7 @@ class TOUCH:
 #
 # Send a command to the touch controller and wait for the response
 # cmd is the command byte
+# bits is the expected data size. Reasonable values are 8 and 12
 #
     def touch_talk(self, cmd, bits):
         self.spi.write(bytearray([cmd]))
