@@ -1,7 +1,8 @@
 # asyncio version
 # The MIT License (MIT)
 #
-# Copyright (c) 2016 Robert Hammelrath
+# Copyright (c) 2016, 2017 Robert Hammelrath (basic driver)
+#               2016 Peter Hinch (asyncio extension)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,17 +25,9 @@
 # Class supporting the resisitve touchpad of TFT LC-displays
 #
 import pyb, stm
+from machine import SPI, Pin
 # define constants
 #
-
-CONTROL_PORT = stm.GPIOC
-T_CLOCK = const(1 << 5)  ## X12 = C5
-T_DOUT  = const(1 << 4)  ## X11 = C4
-T_DIN   = const(1 << 7)  ## Y2  = C7
-T_IRQ   = const(1 << 6)  ## Y1  = C6
-
-# T_CS is not used and must be hard tied to GND
-
 T_GETX  = const(0xd0)  ## 12 bit resolution
 T_GETY  = const(0x90)  ## 12 bit resolution
 T_GETZ1 = const(0xb8)  ## 8 bit resolution
@@ -49,17 +42,15 @@ class TOUCH:
 # async: set True if asynchronous operation intended
 # confidence: confidence level - number of consecutive touches with a margin smaller than the given level
 #       which the function will sample until it accepts it as a valid touch
-# margin: Difference from mean centre at which touches are considered at the same position
+# margin: Distance from mean centre at which touches are considered at the same position
 # delay: Delay between samples in ms. (n/a if asynchronous)
 #
     DEFAULT_CAL = (-3917, -0.127, -3923, -0.1267, -3799, -0.07572, -3738,  -0.07814)
 
-    def __init__(self, controller="XPT2046", asyn=False, *, confidence=5, margin=50, delay=10, calibration=None):
-        self.pin_clock = pyb.Pin("X12", pyb.Pin.OUT_PP)
-        self.pin_clock.value(0)
-        self.pin_d_out = pyb.Pin("X11", pyb.Pin.OUT_PP)
-        self.pin_d_in  = pyb.Pin("Y2", pyb.Pin.IN)
-        self.pin_irq   = pyb.Pin("Y1", pyb.Pin.IN)
+    def __init__(self, controller="XPT2046", asyn=False, *, confidence=5, margin=50, delay=10, calibration=None, spi = None):
+        if spi is None:
+            self.spi = SPI(-1, baudrate=1000000, sck=Pin("X12"), mosi=Pin("X11"), miso=Pin("Y2"))
+        self.recv = bytearray(2)
 # set default values
         self.ready = False
         self.touched = False
@@ -204,8 +195,8 @@ class TOUCH:
 #
     def raw_touch(self):
         global CONTROL_PORT
-        x  = self.touch_talk(T_GETX, 12, CONTROL_PORT)
-        y  = self.touch_talk(T_GETY, 12, CONTROL_PORT)
+        x  = self.touch_talk(T_GETX, 12)
+        y  = self.touch_talk(T_GETY, 12)
         if x > X_LOW and y < Y_HIGH:  # touch pressed?
             return (x, y)
         else:
@@ -213,64 +204,9 @@ class TOUCH:
 #
 # Send a command to the touch controller and wait for the response
 # cmd is the command byte
-# int is the expected size of return data bits
-# port is the gpio base port
 #
-# Straight down coding of the data sheet's timing diagram
-# Clock low & high cycles must last at least 200ns, therefore
-# additional delays are required. At the moment it is set to
-# about 500ns each, 1µs total at 168 MHz clock rate.
-# Total net time for a 12 bit sample: ~ 25 µs, 8 bit sample ~20 µs
-#
-    @staticmethod
-    @micropython.viper
-    def touch_talk(cmd: int, bits: int, port: int)  -> int:
-        gpio_bsr = ptr16(port + stm.GPIO_BSRR)
-        gpio_idr = ptr16(port + stm.GPIO_IDR)
-#
-# now shift the command out, which is 8 bits
-# data is sampled at the low-> high transient
-#
-        gpio_bsr[1] = T_CLOCK # Empty clock cycle before start, maybe obsolete
-        for i in range(2): pass #delay
-        mask = 0x80  # high bit first
-        for i in range(8):
-            gpio_bsr[1] = T_CLOCK # set clock low in the beginning
-            if cmd & mask:
-                gpio_bsr[0] = T_DOUT # set data bit high
-            else:
-                gpio_bsr[1] = T_DOUT # set data bit low
-            for i in range(1): pass #delay
-            gpio_bsr[0] = T_CLOCK # set clock high
-            mask >>= 1
-            for i in range(0): pass #delay
-        gpio_bsr[1] = T_CLOCK | T_DOUT# Another clock & data, low
-        for i in range(2): pass #delay
-        gpio_bsr[0] = T_CLOCK # clock High
-        for i in range(0): pass #delay
-#
-# now shift the data in, which is 8 or 12 bits
-# data is sampled after the high->low transient
-#
-        result = 0
-        for i in range(bits):
-            gpio_bsr[1] = T_CLOCK # Clock low
-            for i in range(1): pass # short delay
-            if gpio_idr[0] & T_DIN: # get data
-                bit = 1
-            else:
-                bit = 0
-            result = (result << 1) | bit # shift data in
-            gpio_bsr[0] = T_CLOCK # Clock high
-            for i in range(1): pass # delay
-#
-# another clock cycle, maybe obsolete
-#
-        gpio_bsr[1] = T_CLOCK # Another clock toggle, low
-        for i in range(2): pass # delay
-        gpio_bsr[0] = T_CLOCK # clock High
-        for i in range(2): pass #delay
-        gpio_bsr[1] = T_CLOCK # Clock low
-# now we're ready to leave
-        return result
+    def touch_talk(self, cmd, bits):
+        self.spi.write(bytearray([cmd]))
+        self.spi.readinto(self.recv)
+        return (self.recv[0] * 256 + self.recv[1]) >> (15 - bits)
 
