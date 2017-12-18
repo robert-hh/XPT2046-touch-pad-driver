@@ -1,8 +1,8 @@
 # asyncio version
 # The MIT License (MIT)
-# 
+#
 # Copyright (c) 2016 Robert Hammelrath
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -22,27 +22,16 @@
 # THE SOFTWARE.
 #
 # Class supporting the resisitve touchpad of TFT LC-displays
-# First example: Controller XPT2046
-# It uses Y5..Y8 of PyBoard
 #
 import pyb, stm
 # define constants
 #
-PCB_VERSION = 2
 
-#if PCB_VERSION == 1:
-#    CONTROL_PORT = stm.GPIOB
-#    T_CLOCK = const(1 << 15)  ## Y8 = B15
-#    T_DOUT  = const(1 << 14)  ## Y7 = B14
-#    T_DIN   = const(1 << 13)  ## Y6 = B13
-#    T_IRQ   = const(1 << 12)  ## Y5 = B12
-    
-if PCB_VERSION == 2:
-    CONTROL_PORT = stm.GPIOC
-    T_CLOCK = const(1 << 5)  ## X12 = C5
-    T_DOUT  = const(1 << 4)  ## X11 = C4
-    T_DIN   = const(1 << 7)  ## Y2  = C7
-    T_IRQ   = const(1 << 6)  ## Y1  = C6
+CONTROL_PORT = stm.GPIOC
+T_CLOCK = const(1 << 5)  ## X12 = C5
+T_DOUT  = const(1 << 4)  ## X11 = C4
+T_DIN   = const(1 << 7)  ## Y2  = C7
+T_IRQ   = const(1 << 6)  ## Y1  = C6
 
 # T_CS is not used and must be hard tied to GND
 
@@ -52,7 +41,7 @@ T_GETZ1 = const(0xb8)  ## 8 bit resolution
 T_GETZ2 = const(0xc8)  ## 8 bit resolution
 #
 X_LOW  = const(10)     ## lowest reasonable X value from the touchpad
-Y_HIGH = const(4090)   ## highest reasonable Y value 
+Y_HIGH = const(4090)   ## highest reasonable Y value
 
 class TOUCH:
 #
@@ -60,23 +49,17 @@ class TOUCH:
 # async: set True if asynchronous operation intended
 # confidence: confidence level - number of consecutive touches with a margin smaller than the given level
 #       which the function will sample until it accepts it as a valid touch
-# margin: Difference from mean centre at which touches are considered at the same position 
+# margin: Difference from mean centre at which touches are considered at the same position
 # delay: Delay between samples in ms. (n/a if asynchronous)
 #
     DEFAULT_CAL = (-3917, -0.127, -3923, -0.1267, -3799, -0.07572, -3738,  -0.07814)
-    def __init__(self, controller = "XPT2046", asyn = False, *, confidence = 5, margin = 50, delay = 10, calibration = None):
-        if PCB_VERSION == 1:
-            self.pin_clock = pyb.Pin("Y8", pyb.Pin.OUT_PP)
-            self.pin_clock.value(0)
-            self.pin_d_out = pyb.Pin("Y7", pyb.Pin.OUT_PP)
-            self.pin_d_in  = pyb.Pin("Y6", pyb.Pin.IN)
-            self.pin_irq   = pyb.Pin("Y5", pyb.Pin.IN)
-        else:
-            self.pin_clock = pyb.Pin("X11", pyb.Pin.OUT_PP)
-            self.pin_clock.value(0)
-            self.pin_d_out = pyb.Pin("X12", pyb.Pin.OUT_PP)
-            self.pin_d_in  = pyb.Pin("Y1", pyb.Pin.IN)
-            self.pin_irq   = pyb.Pin("Y2", pyb.Pin.IN)
+
+    def __init__(self, controller="XPT2046", asyn=False, *, confidence=5, margin=50, delay=10, calibration=None):
+        self.pin_clock = pyb.Pin("X12", pyb.Pin.OUT_PP)
+        self.pin_clock.value(0)
+        self.pin_d_out = pyb.Pin("X11", pyb.Pin.OUT_PP)
+        self.pin_d_in  = pyb.Pin("Y2", pyb.Pin.IN)
+        self.pin_irq   = pyb.Pin("Y1", pyb.Pin.IN)
 # set default values
         self.ready = False
         self.touched = False
@@ -96,10 +79,10 @@ class TOUCH:
 # res: Resolution in bits of the returned values, default = 10
 # confidence: confidence level - number of consecutive touches with a margin smaller than the given level
 #       which the function will sample until it accepts it as a valid touch
-# margin: Difference from mean centre at which touches are considered at the same position 
+# margin: Difference from mean centre at which touches are considered at the same position
 # delay: Delay between samples in ms.
 #
-    def touch_parameter(self, confidence = 5, margin = 50, delay = 10, calibration = None):
+    def touch_parameter(self, confidence=5, margin=50, delay=10, calibration=None):
         if not self.asynchronous: # Ignore attempts to change on the fly.
             confidence = max(min(confidence, 25), 5)
             if confidence != self.buf_length:
@@ -113,24 +96,24 @@ class TOUCH:
 
 # get_touch(): Synchronous use. get a touch value; Parameters:
 #
-# initital: Wait for a non-touch state before getting a sample. 
+# initital: Wait for a non-touch state before getting a sample.
 #           True = Initial wait for a non-touch state
 #           False = Do not wait for a release
 # wait: Wait for a touch or not?
 #       False: Do not wait for a touch and return immediately
-#       True: Wait until a touch is pressed. 
+#       True: Wait until a touch is pressed.
 # raw: Setting whether raw touch coordinates (True) or normalized ones (False) are returned
 #      setting the calibration vector to (0, 1, 0, 1, 0, 1, 0, 1) result in a identity mapping
 # timeout: Longest time (ms, or None = 1 hr) to wait for a touch or release
 #
 # Return (x,y) or None
 #
-    def get_touch(self, initial = True, wait = True, raw = False, timeout = None):
+    def get_touch(self, initial=True, wait=True, raw=False, timeout=None):
         if self.asynchronous:
             return None # Should only be called in synhronous mode
-        if timeout == None: 
+        if timeout is None:
             timeout = 3600000 # set timeout to 1 hour
-# 
+#
         if initial:  ## wait for a non-touch state
             sample = True
             while sample and timeout > 0:
@@ -152,18 +135,18 @@ class TOUCH:
                 if dev <= self.margin: # got one; compare against the square value
                     if raw:
                         return (meanx, meany)
-                    else: 
+                    else:
                         return self.do_normalize((meanx, meany))
-# get a new value 
+# get a new value
             sample = self.raw_touch()  # get a touch
-            if sample == None:
+            if sample is None:
                 if not wait:
                     return None
                 nsamples = 0    # Invalidate buff
             else:
                 buff[buffptr] = sample # put in buff
                 buffptr = (buffptr + 1) % buf_length
-                nsamples = min(nsamples +1, buf_length)
+                nsamples = min(nsamples + 1, buf_length)
             pyb.delay(self.delay)
             timeout -= self.delay
         return None
@@ -185,7 +168,7 @@ class TOUCH:
                     self.ready = True
                     self.x, self.y = self.do_normalize((meanx, meany))
             sample = self.raw_touch()  # get a touch
-            if sample == None:
+            if sample is None:
                 self.touched = False
                 self.ready = False
                 nsamples = 0    # Invalidate buff
@@ -202,7 +185,7 @@ class TOUCH:
             self.ready = False
             return self.x, self.y
         return None
-# 
+#
 # do_normalize(touch)
 # calculate the screen coordinates from the touch values, using the calibration values
 # touch must be the tuple return by get_touch
@@ -235,24 +218,21 @@ class TOUCH:
 #
 # Straight down coding of the data sheet's timing diagram
 # Clock low & high cycles must last at least 200ns, therefore
-# additional delays are required. At the moment it is set to 
+# additional delays are required. At the moment it is set to
 # about 500ns each, 1µs total at 168 MHz clock rate.
 # Total net time for a 12 bit sample: ~ 25 µs, 8 bit sample ~20 µs
 #
     @staticmethod
-    @micropython.viper        
+    @micropython.viper
     def touch_talk(cmd: int, bits: int, port: int)  -> int:
         gpio_bsr = ptr16(port + stm.GPIO_BSRR)
         gpio_idr = ptr16(port + stm.GPIO_IDR)
 #
-# now shift the command out, which is 8 bits 
+# now shift the command out, which is 8 bits
 # data is sampled at the low-> high transient
 #
         gpio_bsr[1] = T_CLOCK # Empty clock cycle before start, maybe obsolete
         for i in range(2): pass #delay
-#        gpio_bsr[0] = T_CLOCK # clock High
-#        for i in range(2): pass #delay
-#        gpio_bsr[1] = T_CLOCK # set clock low in the beginning
         mask = 0x80  # high bit first
         for i in range(8):
             gpio_bsr[1] = T_CLOCK # set clock low in the beginning
@@ -269,7 +249,7 @@ class TOUCH:
         gpio_bsr[0] = T_CLOCK # clock High
         for i in range(0): pass #delay
 #
-# now shift the data in, which is 8 or 12 bits 
+# now shift the data in, which is 8 or 12 bits
 # data is sampled after the high->low transient
 #
         result = 0
