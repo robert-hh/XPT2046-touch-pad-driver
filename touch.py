@@ -52,7 +52,8 @@ class TOUCH:
             self.spi = SPI(-1, baudrate=1000000, sck=Pin("X12"), mosi=Pin("X11"), miso=Pin("Y2"))
         else:
             self.spi = spi
-        self.recv = bytearray(2)
+        self.recv = bytearray(3)
+        self.xmit = bytearray(3)
 # set default values
         self.ready = False
         self.touched = False
@@ -205,11 +206,11 @@ class TOUCH:
             return None
 #
 # Send a command to the touch controller and wait for the response
-# cmd is the command byte
-# bits is the expected data size. Reasonable values are 8 and 12
+# cmd:  command byte
+# bits: expected data size. Reasonable values are 8 and 12
 #
     def touch_talk(self, cmd, bits):
-        self.spi.write(bytearray([cmd]))
-        self.spi.readinto(self.recv)
-        return (self.recv[0] * 256 + self.recv[1]) >> (15 - bits)
+        self.xmit[0] = cmd
+        self.spi.write_readinto(self.xmit, self.recv)
+        return (self.recv[1] * 256 + self.recv[2]) >> (15 - bits)
 
