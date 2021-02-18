@@ -47,11 +47,12 @@ class XPT2046:
 #
     DEFAULT_CAL = (-3917, -0.127, -3923, -0.1267, -3799, -0.07572, -3738,  -0.07814)
 
-    def __init__(self, spi=None, *, confidence=5, margin=50, delay=10, calibration=None):
+    def __init__(self, spi=None, cs=None, *, confidence=5, margin=50, delay=10, calibration=None):
         if spi is None:
             raise IOError("The SPI object has to be supplied")
         else:
             self.spi = spi
+        self.cs = cs
         self.recv = bytearray(3)
         self.xmit = bytearray(3)
 # set default values
@@ -165,7 +166,11 @@ class XPT2046:
 # bits: expected data size. Reasonable values are 8 and 12
 #
     def touch_talk(self, cmd, bits):
+        if self.cs is not None:
+            self.cs(0)
         self.xmit[0] = cmd
         self.spi.write_readinto(self.xmit, self.recv)
+        if self.cs is not None:
+            self.cs(1)
         return (self.recv[1] * 256 + self.recv[2]) >> (15 - bits)
 
