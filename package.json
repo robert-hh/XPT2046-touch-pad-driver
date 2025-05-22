@@ -1,0 +1,8 @@
+{
+  "urls": [
+    ["touch.py", "github:robert-hh/XPT2046-touch-pad-driver/touch.py"],
+    ["xpt2046_syn.py", "github:robert-hh/XPT2046-touch-pad-driver/xpt2046_syn.py"]
+  ],
+  "version": "1.0.0",
+  "deps": []
+}
